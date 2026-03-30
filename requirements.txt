@@ -1,0 +1,13 @@
+# 智能编程代理依赖
+
+# Anthropic API
+anthropic>=0.40.0
+
+# YAML 配置
+pyyaml>=6.0
+
+# 环境变量
+python-dotenv>=1.0.0
+
+# HTTP 请求
+requests>=2.31.0

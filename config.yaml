@@ -1,0 +1,249 @@
+# ========================================
+# 智能编程代理 - 配置文件
+# ========================================
+# 修改此文件可自定义代理行为，无需改动代码。
+# 提示词支持变量插值：{workdir}, {skills}, {name}, {role}, {team}, {text}
+
+# -------------------- 基础设置 --------------------
+settings:
+  max_tokens: 8000            # 每次模型调用的最大输出 token 数
+  token_threshold: 100000     # 触发自动压缩的 token 阈值
+  poll_interval: 5            # 团队成员空闲轮询间隔（秒）
+  idle_timeout: 60            # 团队成员空闲超时（秒）
+  bash_timeout: 120           # bash 命令执行超时（秒）
+  max_output_length: 50000    # 命令输出截断长度（字符）
+  max_subagent_rounds: 30     # 子代理最大循环轮次
+  max_teammate_rounds: 50     # 团队成员最大工作轮次
+  repl_prompt: "agent >> "    # REPL 提示符
+  api_retry_count: 3          # API 调用失败时的重试次数
+  api_retry_delay: 2          # API 调用重试前的等待时间（秒）
+
+# -------------------- 危险命令黑名单 --------------------
+# 匹配到这些字符串的命令将被拦截
+dangerous_commands:
+  - "rm -rf /"
+  - "sudo"
+  - "shutdown"
+  - "reboot"
+
+# -------------------- 提示词配置 --------------------
+prompts:
+  # 主代理系统提示词
+  # 可用变量：{workdir}, {skills}
+  system: |
+    你是一个在 {workdir} 目录下的编程代理。使用工具来完成任务。
+    多步骤工作请使用 task_create/task_update/task_list。
+    短期清单请使用 TodoWrite。子代理委派请使用 task。
+    专业知识请使用 load_skill。
+    可用技能：{skills}
+
+  # 上下文压缩提示词
+  # 可用变量：{text}
+  compress: "请总结以下对话内容，保留关键信息以保持上下文连贯性：\n{text}"
+
+  # 压缩确认回复
+  compress_ack: "收到，基于摘要继续工作。"
+
+  # 后台任务结果确认
+  background_ack: "已记录后台任务结果。"
+
+  # 收件箱消息确认
+  inbox_ack: "已记录收件箱消息。"
+
+  # 待办提醒（当模型连续多轮未更新 TodoWrite 时触发）
+  todo_reminder: "<reminder>请更新你的待办事项。</reminder>"
+
+  # 团队成员系统提示词
+  # 可用变量：{name}, {role}, {team}, {workdir}
+  teammate: "你是 '{name}'，角色：{role}，团队：{team}，工作目录：{workdir}。完成当前工作后使用 idle。你可以自动认领任务。"
+
+  # 子代理确认回复
+  subagent_ack: "(子代理执行完毕)"
+
+  # 后台任务启动提示
+  background_started: "后台任务 {task_id} 已启动：{command}"
+
+  # 任务认领提示
+  task_claimed: "已为 {owner} 认领任务 #{task_id}"
+
+# -------------------- 工具配置 --------------------
+# 基础工具（bash、read_file、write_file、edit_file）可通过 enabled 控制。
+# 其他工具始终启用，enabled 配置无效。
+# description 为发送给模型的工具描述
+tools:
+  # === 基础工具（可选，通过 enabled 控制启用/禁用）===
+  bash:
+    enabled: true
+    description: "执行一条 shell 命令。"
+
+  read_file:
+    enabled: true
+    description: "读取文件内容。"
+
+  write_file:
+    enabled: true
+    description: "将内容写入文件。"
+
+  edit_file:
+    enabled: true
+    description: "替换文件中的精确文本。"
+
+  # === 任务管理工具（始终启用，enabled 配置无效）===
+  TodoWrite:
+    description: "更新任务追踪列表。"
+
+  task:
+    description: "创建子代理进行独立探索或工作。"
+
+  load_skill:
+    description: "按名称加载专业知识。"
+
+  compress:
+    description: "手动压缩对话上下文。"
+
+  # === 后台任务工具 ===
+  background_run:
+    description: "在后台线程中运行命令。"
+
+  check_background:
+    description: "检查后台任务状态。"
+
+  # === 持久化任务工具 ===
+  task_create:
+    description: "创建持久化文件任务。"
+
+  task_get:
+    description: "按 ID 获取任务详情。"
+
+  task_update:
+    description: "更新任务状态或依赖关系。"
+
+  task_list:
+    description: "列出所有任务。"
+
+  claim_task:
+    description: "从任务板认领任务。"
+
+  # === 团队协作工具 ===
+  spawn_teammate:
+    description: "创建一个持久的自主团队成员。"
+
+  list_teammates:
+    description: "列出所有团队成员。"
+
+  send_message:
+    description: "向团队成员发送消息。"
+
+  read_inbox:
+    description: "读取并清空主代理的收件箱。"
+
+  broadcast:
+    description: "向所有团队成员广播消息。"
+
+  # === 管理工具 ===
+  shutdown_request:
+    description: "请求团队成员关闭。"
+
+  plan_approval:
+    description: "批准或拒绝团队成员的计划。"
+
+  idle:
+    description: "进入空闲状态。"
+
+  # === HTTP 请求工具 ===
+  http_request:
+    description: "发送 HTTP 请求（GET、POST、PUT、DELETE 等）。支持自定义 headers 和 JSON body。"
+
+  # === MCP 工具 ===
+  # MCP 提供的工具会自动注册，描述由服务器定义
+  mcp_call:
+    description: "调用已连接的 MCP 服务器提供的工具。"
+
+# -------------------- 预配置 HTTP 接口 --------------------
+# 每个接口会注册为独立的工具，格式：工具名_操作
+http_endpoints:
+  # GitHub API 示例
+  github_repo:
+    base_url: "https://api.github.com"
+    description: "GitHub 仓库信息接口"
+    endpoints:
+      - name: "get_repo"
+        method: "GET"
+        path: "/repos/{owner}/{repo}"
+        description: "获取 GitHub 仓库信息"
+        params:
+          owner: {description: "仓库所有者", required: true}
+          repo: {description: "仓库名称", required: true}
+
+      - name: "get_issues"
+        method: "GET"
+        path: "/repos/{owner}/{repo}/issues"
+        description: "获取仓库的 Issue 列表"
+        params:
+          owner: {description: "仓库所有者", required: true}
+          repo: {description: "仓库名称", required: true}
+          state: {description: "Issue 状态 (open/closed/all)", required: false}
+          limit: {description: "返回数量限制", required: false}
+
+  # 你的内部 API 示例
+  # my_api:
+  #   base_url: "https://your-api.com"
+  #   description: "内部 API"
+  #   headers:
+  #     Authorization: "Bearer YOUR_TOKEN"
+  #   endpoints:
+  #     - name: "get_user"
+  #       method: "GET"
+  #       path: "/api/users/{user_id}"
+  #       description: "获取用户信息"
+  #       params:
+  #         user_id: {description: "用户ID", required: true}
+
+# -------------------- MCP 服务器配置 --------------------
+# 使用与 Claude Desktop 相同的配置格式
+# 支持 stdio 和 SSE 两种连接方式
+mcp_servers:
+  # 示例：Excalidraw MCP 服务器（请替换为你本地的实际路径）
+  # excalidraw:
+  #   command: "node"
+  #   args: ["/path/to/mcp_excalidraw/dist/index.js"]
+  #   env:
+  #     ENABLE_CANVAS_SYNC: "true"
+  #     EXPRESS_SERVER_URL: "http://127.0.0.1:3000"
+  #     LOG_FILE_PATH: "/dev/null"
+
+  # 示例：使用 stdio 连接的 MCP 服务器
+  # filesystem:
+  #   command: "npx"
+  #   args: ["-y", "@modelcontextprotocol/server-filesystem", "/Users/yourname/allowed/path"]
+  #   env: {}
+
+  # 示例：使用 SSE 连接的 MCP 服务器
+  # fetch:
+  #   url: "https://example.com/mcp/sse"
+  #   headers:
+  #     Authorization: "Bearer YOUR_TOKEN"
+
+  # 示例：内置的 fetch MCP 服务器（命令行工具方式）
+  # mcp-fetch:
+  #   command: "uvx"
+  #   args: ["mcp-fetch-cli"]
+
+# -------------------- HTTP 请求配置 --------------------
+http:
+  # 默认请求超时（秒）
+  timeout: 30
+  # 最大响应大小（字节）
+  max_response_size: 100000
+  # 默认 headers
+  default_headers:
+    User-Agent: "VibeCodingAgent/1.0"
+
+  # === HTTP 请求工具 ===
+  http_request:
+    description: "发送 HTTP 请求（GET、POST、PUT、DELETE 等）。支持自定义 headers 和 JSON body。"
+
+  # === MCP 工具 ===
+  # MCP 提供的工具会自动注册，描述由服务器定义
+  mcp_call:
+    description: "调用已连接的 MCP 服务器提供的工具。"

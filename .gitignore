@@ -1,0 +1,21 @@
+# Environment variables (contains API keys)
+.env
+
+# Python
+__pycache__/
+*.pyc
+.venv/
+
+# Teaching video (separate project)
+teaching-video/
+
+# Task / team runtime state
+.tasks/
+.team/
+
+# Node
+node_modules/
+package-lock.json
+
+# OS
+.DS_Store
